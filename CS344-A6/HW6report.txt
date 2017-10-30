@@ -1,0 +1,721 @@
+CS344 HW6
+Alan Beadle, Alex Macri, Adam Kimball
+
+
+
+Report is organized into sections. First is our source code, next are out input and output files and last is the console output.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tester.java:
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package dfs.bfs.ts;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Deque;
+
+/*
+ * A note on file I/O: The file paths are hardcoded because this application was
+ * written on Mac OS, which requires literal pathing. If testing, alter file location
+ * in adjMatrix.java and adjList.java, on both input and output files.
+ */
+
+/**
+ *
+ * @author alexandermacri
+ */
+public class TESTER {
+   
+    public static void main(String[] args) throws FileNotFoundException, IOException{
+      adjList test1 = new adjList(); //Initialize adjList from file(inputadjList.txt)
+      adjMatrix test2 = new adjMatrix();//Initialize adjMatrix from file (inputadjMatrix.txt)
+      
+      test1.printList();//print to console and file
+      test2.printMatrix();//print to console and file
+      System.err.println("\n");
+      System.err.println("converion from list to matrix");
+      test1.printList();
+      boolean[][] matrix=test1.listToMatrix(); //convert test 1 (list) to a matrix
+      test1.printMatrix(matrix);
+      System.err.println("converion from matrix to list");
+      test2.printMatrix();
+      Deque<Integer>[] list=test2.matrixToList(); //convert test 2(matrix) to a list
+      test2.printList(list);
+      
+      System.err.println("DFS");
+      DFS dfs=new DFS(test1.numNodes);
+      dfs.DFS(test1);
+      dfs.dfsGraph(0,"list");
+      System.err.println("\n");
+      dfs=new DFS(test1.numNodes);
+      dfs.DFS(test2);
+      dfs.dfsGraph(0,"matrix");
+      System.err.println("DFS ENDS");
+      System.err.println("\n");
+      
+      System.err.println("BFS");
+      BFS bfs=new BFS(test1.numNodes);
+      bfs.BFS(test1);
+      bfs.bfsGraph(0,"list");
+      System.err.println("\n");
+      bfs=new BFS(test2.numNodes);
+      bfs.BFS(test2);
+      bfs.bfsGraph(0,"matrix");
+      System.err.println("BFS ENDS");
+      
+      System.err.println("\n");
+      System.err.println("TS");
+      TS ts=new TS(test2.numNodes);
+      ts.TS(test2);
+      ts.tsGraph(0,"matrix");
+      ts.printList();
+      
+      
+    }
+      
+}
+
+adjList.java:
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package dfs.bfs.ts;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
+
+
+public class adjList {
+    
+    int numNodes;
+    Deque<Integer>[] adjList;
+    
+    adjList(int numNodes){
+        this.numNodes=numNodes;
+        this.adjList=new Deque[numNodes];
+        for(int i=0;i<this.numNodes;i++)this.adjList[i]=new ArrayDeque<>();
+    }
+    
+    adjList() throws FileNotFoundException, IOException{
+        String line; 
+        BufferedReader read=new BufferedReader(new FileReader("CS344-A6/assignment6/inputadjList.txt"));
+        line=read.readLine();
+        char[] temp=line.toCharArray();
+        this.numNodes=(temp[0]-'0');
+        this.adjList=new Deque[this.numNodes];
+        for(int row=0;(line=read.readLine())!=null;row++){
+            temp=line.toCharArray();
+            this.adjList[row]=new ArrayDeque<>(temp.length);
+            for(int i=1;i<temp.length;i++)this.adjList[row].add(temp[i]-'0');
+        }
+    }
+    
+    void addEdge(int node1,int node2){this.adjList[node1].add(node2);}
+    void removeEdge(int node1, int node2){
+        Iterator it = this.adjList[node1].iterator();
+        while(it.hasNext()){if(it.next()==node2){it.remove();return;}}     
+    }
+    
+    Deque<Integer>[] returnList(adjList thing){return thing.adjList;}
+    
+    boolean hasEdge(int node1,int node2){return this.adjList[node1].contains(node2);}
+    Deque<Integer> rowMajor(int node){return this.adjList[node];}
+    Deque<Integer> columnMajor(int num){
+        Deque<Integer> edges = new ArrayDeque<>();
+        for(int i=0;i<this.numNodes;i++)if(this.adjList[i].contains(num))edges.add(i);
+        return edges;
+    }
+    
+    void printList() throws FileNotFoundException{
+        PrintWriter listOut = new PrintWriter("CS344-A6/assignment6/listOut.txt");
+        for(int i=0;i<adjList.length;i++){
+            System.err.print(" "+i+" ");
+            listOut.print(" "+i+" ");
+            for(Iterator<Integer> it = adjList[i].iterator(); it.hasNext();) {
+                Integer num = it.next();
+                System.err.print(" "+num+" ");
+                listOut.print(" "+num+" ");
+            }
+            System.err.print("\n");
+            listOut.print("\n");
+        }
+        listOut.close();
+    }
+    
+    void printMatrix(boolean[][] adjMatrix) throws FileNotFoundException{
+        PrintWriter matOut = new PrintWriter("CS344-A6/assignment6/matOutput.txt");
+        for(int i=0;i<this.numNodes;i++){
+            for(int j=0;j<this.numNodes;j++){
+                if(adjMatrix[i][j]){
+                    System.err.print(" "+1+" ");
+                    matOut.print(" "+1+" ");
+                }else{
+                    System.err.print(" "+0+" ");
+                    matOut.print(" "+0+" ");
+                }
+            }
+            System.err.print("\n");
+            matOut.print("\n");
+        }
+        matOut.close();
+    }
+    
+    boolean[][] listToMatrix(){
+        boolean[][] adjMatrix=new boolean[this.numNodes][this.numNodes];
+       
+        for(int i=0;i<this.numNodes;i++)
+            for(int j=0;j<this.numNodes;j++)
+                if(hasEdge(i,j))adjMatrix[i][j]=true;
+                else adjMatrix[i][j]=false;
+          
+            return adjMatrix;
+    }
+}
+
+
+adjMatrix.java:
+
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package dfs.bfs.ts;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
+
+
+public class adjMatrix{
+    
+    int numNodes;
+    boolean[][] adjMatrix;
+    
+    adjMatrix(int numNodes){
+        this.numNodes=numNodes;
+        this.adjMatrix=new boolean[numNodes][numNodes];
+    }
+    
+    adjMatrix() throws FileNotFoundException, IOException{
+        String line; 
+        BufferedReader read=new BufferedReader(new FileReader("CS344-A6/assignment6/inputadjMatrix.txt"));
+        line=read.readLine();
+        char[] temp=line.toCharArray();
+        this.numNodes=(temp[0]-'0');
+        this.adjMatrix=new boolean[this.numNodes][this.numNodes];
+            for(int row=0;(line=read.readLine())!=null;row++){
+                temp=line.toCharArray();
+                for(int i=0;i<temp.length;i++)this.adjMatrix[row][i]=((temp[i]-'0')==1);
+            }
+    }
+    
+    void addEdge(int node1,int node2){this.adjMatrix[node1][node2]=true;}
+    void removeEdge(int node1, int node2){this.adjMatrix[node1][node2]=false;}
+    boolean hasEdge(int node1, int node2){return this.adjMatrix[node1][node2];}
+    
+    boolean[][] returnMatrix(adjMatrix thing){return thing.adjMatrix;}
+    
+    Deque<Integer> rowMajor(int num){
+        Deque<Integer> edges=new ArrayDeque<>();
+        for(int j=0;j<this.numNodes;j++)if(adjMatrix[num][j])edges.add(j);
+        return edges;
+    }
+    Deque<Integer> columnMajor(int num){
+        Deque<Integer> edges=new ArrayDeque<>();
+        for(int j=0;j<this.numNodes;j++)if(this.adjMatrix[j][num])edges.add(j);
+        return edges;
+    }
+    
+    void printList(Deque<Integer>[] adjList) throws FileNotFoundException{
+        PrintWriter listOut = new PrintWriter("CS344-A6/assignment6/listOut.txt");
+        for(int i=0;i<adjList.length;i++){
+            System.err.print(" "+i+" ");
+            listOut.print(" "+i+" ");
+            for(Iterator<Integer> it = adjList[i].iterator(); it.hasNext();) {
+                Integer num = it.next();
+                System.err.print(" "+num+" ");
+                listOut.print(" "+num+" ");
+            }
+            System.err.print("\n");
+            listOut.print("\n");
+        }
+        listOut.close();
+    }
+    void printMatrix() throws FileNotFoundException{
+         PrintWriter matOut = new PrintWriter("CS344-A6/assignment6/matOutput.txt");
+        for(int i=0;i<this.numNodes;i++){
+            for(int j=0;j<this.numNodes;j++){
+                if(adjMatrix[i][j]){
+                    System.err.print(" "+1+" ");
+                    matOut.print(" "+1+" ");
+                }else{
+                    System.err.print(" "+0+" ");
+                    matOut.print(" "+0+" ");
+                }
+            }
+            System.err.print("\n");
+            matOut.print("\n");
+        }
+        matOut.close();
+    }
+    
+    Deque<Integer>[] matrixToList(){
+        Deque<Integer>[] adjList=new Deque[this.numNodes];
+        for(int i=0;i<this.numNodes;i++)adjList[i]=new ArrayDeque<>(rowMajor(i));
+        return adjList;
+    }       
+}
+
+
+
+BFS.java:
+
+fs.bfs.ts;
+
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+
+public class BFS {
+   
+   boolean[][] adjMatrix;
+   Deque<Integer>[] adjList;
+   int      numNodes;
+   boolean[] visited;
+   Deque<Integer> graph;
+   private int unvisited=-1;
+
+   BFS(int num){
+      this.numNodes=num;
+      this.adjMatrix=new boolean[num][num];
+      this.adjList=new Deque[num];
+      this.visited=new boolean[num];
+   }
+
+   public void BFS(adjMatrix matrix){
+      this.numNodes=matrix.adjMatrix.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjMatrix=new boolean[this.numNodes][this.numNodes];
+      this.adjMatrix=matrix.returnMatrix(matrix);
+   }
+   
+   public void BFS(adjList list){
+      this.numNodes=list.adjList.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjList=new Deque[this.numNodes];
+      this.adjList=list.returnList(list);
+   }
+   
+   public void bfsGraph(int i,String graph){
+       this.visited=new boolean[this.numNodes];
+       switch(graph){
+           case "matrix":
+               System.err.println("matrix");
+               matrixGraph(i);
+               break;
+           case "list":
+               System.err.println("list");
+               listGraph(i);
+               break;
+           default :
+               System.err.println("Invalid Graph");
+       }
+   }
+   
+   public void matrixGraph(int num){
+       this.graph=new ArrayDeque<>();
+       this.graph.add(num);
+       this.visited[num]=true;
+       printNode(num);
+       while(!this.graph.isEmpty()){
+          int n=(this.graph.peek()).intValue();
+          int child=getUnvisitedMatrixNode(n);
+          if(child!=unvisited){
+             this.visited[child]=true;
+             printNode(child);
+             this.graph.add(child);
+          }else{
+             this.graph.remove();
+          }
+       }
+      clearVisited();     
+   }
+ 
+   int getUnvisitedMatrixNode(int n){
+       for(int j=0;j<this.numNodes;j++){
+ 	 if(this.adjMatrix[n][j]&&!visited[j]){return(j);}
+       }
+       return(this.unvisited);
+    }
+   
+   public void listGraph(int num){
+       this.graph=new ArrayDeque<>();
+       this.graph.add(num);
+       this.visited[num]=true;
+       printNode(num);
+       while(!this.graph.isEmpty()){
+          int n=(this.graph.peek()).intValue();
+          int child=getUnvisitedListNode(n);
+          if(child!=unvisited){
+             this.visited[child]=true;
+             printNode(child);
+             this.graph.add(child);
+          }else{
+             this.graph.remove();
+          }
+       }
+      clearVisited(); 
+   }
+   
+   int getUnvisitedListNode(int n){
+       for(int j=0;j<this.numNodes;j++){
+ 	 if(this.adjList[n].contains(j)&&!this.visited[j]){return(j);}
+       }
+       return(unvisited);
+    } 
+   
+    void clearVisited(){
+       for(int i=0;i<visited.length;i++)
+          visited[i]=false;
+    }
+  
+   void printNode(int node){System.err.println(node);}
+}
+
+
+
+DFS.java:
+
+package dfs.bfs.ts;
+
+import java.util.Deque;
+
+public class DFS<T extends Comparable<T>>{
+   
+   boolean[][] adjMatrix;
+   Deque<Integer>[] adjList;
+   int numNodes;
+   boolean[] visited;
+   
+   DFS(int num){
+      this.numNodes=num;
+      this.adjMatrix=new boolean[num][num];
+      this.adjList=new Deque[num];
+      this.visited=new boolean[num];
+   }
+
+   public void DFS(adjMatrix matrix){
+      this.numNodes=matrix.adjMatrix.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjMatrix=new boolean[this.numNodes][this.numNodes];
+      this.adjMatrix=matrix.returnMatrix(matrix);
+   }
+   
+   public void DFS(adjList list){
+      this.numNodes=list.adjList.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjList=new Deque[this.numNodes];
+      this.adjList=list.returnList(list);
+   }
+   
+   public void dfsGraph(int i,String graph){
+       visited=new boolean[this.numNodes];
+       switch(graph){
+           case "matrix":
+               System.err.println("matrix");
+               matrixGraph(i);
+               break;
+           case "list":
+               System.err.println("list");
+               listGraph(i);
+               break;
+           default :
+               System.err.println("Invalid Graph");
+       }
+   }
+   private void matrixGraph(int i){
+      this.visited[i]=true;
+      printNode(i);
+      for(int j=0;j<this.numNodes;j++){
+          if(this.adjMatrix[i][j]&&!this.visited[j])matrixGraph(j);
+      }
+   }
+   
+   private void listGraph(int i){
+      this.visited[i]=true;
+      printNode(i);
+      for(int j=0;j<this.numNodes;j++){
+          if(this.adjList[i].contains(j)&&!this.visited[j])listGraph(j);
+      }
+   }
+   
+   void printNode(int node){System.err.println(node);}
+}
+
+TS.java:
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package dfs.bfs.ts;
+import java.util.Deque;
+import java.util.ArrayDeque;
+
+public class TS {
+   
+   boolean[][] adjMatrix;
+   Deque<Integer>[] adjList;
+   int numNodes;
+   boolean[] visited;
+   Deque<Integer> list;
+   int elimcount=0;
+
+   TS(int num){
+      this.numNodes=num;
+      this.adjMatrix=new boolean[num][num];
+      this.adjList=new Deque[num];
+      this.visited=new boolean[num];
+   }
+   
+   public void TS(adjMatrix matrix){
+      this.numNodes=matrix.adjMatrix.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjMatrix=new boolean[this.numNodes][this.numNodes];
+      this.adjMatrix=matrix.returnMatrix(matrix);
+      this.list=new ArrayDeque<>(this.numNodes);
+   }
+   
+   public void TS(adjList list){
+      this.numNodes=list.adjList.length;
+      this.visited=new boolean[this.numNodes];
+      this.adjList=new Deque[this.numNodes];
+      this.adjList=list.returnList(list);
+      this.list=new ArrayDeque<>(this.numNodes);
+   }
+    
+   public void tsGraph(int i,String graph){
+       switch(graph){
+           case "matrix":
+                elimcount=0;
+           	while(elimcount<adjMatrix.length)matrixTS(i);
+               break;
+           case "list":
+               elimcount=0;
+               while(elimcount<adjMatrix.length)listTS(i);
+               break;
+           default :
+       		System.err.println("Invalid Graph");
+       	}
+   }
+   
+   public void matrixTS(int node){
+      this.visited[node]=true;
+      boolean done=true;
+      int nextnode=0;
+      for(int j=0;j<this.numNodes;j++){
+          if(this.adjMatrix[node][j]){done=false;nextnode=j;break;}
+      }
+      if(done){list.add(node);eliminate(node);elimcount++;}
+      else matrixTS(nextnode);
+   }
+   
+   public void listTS(int node){
+      this.visited[node]=true;
+      boolean done=true;
+      int nextnode=0;
+      System.err.println();
+      for(int j=0;j<this.numNodes;j++){
+          if(this.adjList[node].contains(j)){done=false;nextnode=j;break;}
+      }
+      if(done){list.add(node);eliminate(node);elimcount++;}
+      else listTS(nextnode);
+   }
+   
+   void eliminate(int num){for(int count=0;count<this.numNodes;count++){this.adjMatrix[count][num]=false;}}
+   void printNode(int node){System.err.println(node);}
+   public void printList(){System.err.print("Topological Sort");for(Integer num:this.list)System.err.print(" "+ num+ " ");}
+   
+}
+
+
+
+
+InputadjList.txt:
+6
+01
+12345
+25
+35
+4
+54
+
+inputadjMatrix.txt:
+6
+010000
+001111
+000001
+000001
+000000
+000010
+
+listOut.txt:
+0  1 
+ 1  2  3  4  5 
+ 2  5 
+ 3  5 
+ 4 
+ 5  4 
+
+
+matOutput.txt:
+0  1  0  0  0  0 
+ 0  0  1  1  1  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  0 
+ 0  0  0  0  1  0 
+
+Output to Console: 
+0  1 
+ 1  2  3  4  5 
+ 2  5 
+ 3  5 
+ 4 
+ 5  4 
+ 0  1  0  0  0  0 
+ 0  0  1  1  1  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  0 
+ 0  0  0  0  1  0 
+
+
+converion from list to matrix
+ 0  1 
+ 1  2  3  4  5 
+ 2  5 
+ 3  5 
+ 4 
+ 5  4 
+ 0  1  0  0  0  0 
+ 0  0  1  1  1  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  0 
+ 0  0  0  0  1  0 
+converion from matrix to list
+ 0  1  0  0  0  0 
+ 0  0  1  1  1  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  1 
+ 0  0  0  0  0  0 
+ 0  0  0  0  1  0 
+ 0  1 
+ 1  2  3  4  5 
+ 2  5 
+ 3  5 
+ 4 
+ 5  4 
+DFS
+list
+0
+1
+2
+5
+4
+3
+
+
+matrix
+0
+1
+2
+5
+4
+3
+DFS ENDS
+
+
+BFS
+list
+0
+1
+2
+3
+4
+5
+
+
+matrix
+0
+1
+2
+3
+4
+5
+BFS ENDS
+
+
+TS
+Topological Sort 4  5  2  3  1  0
